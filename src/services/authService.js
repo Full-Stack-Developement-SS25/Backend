@@ -37,10 +37,6 @@ exports.register = async (email, password) => {
   }
 };
 
-
-
-
-
 exports.login = async (email, password) => {
   const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
   if (result.rows.length === 0) {
