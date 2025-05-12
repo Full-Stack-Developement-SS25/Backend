@@ -26,7 +26,7 @@ router.get("/:id", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const result = await db.query(
-      "SELECT id, email, xp, level FROM users ORDER BY level DESC, xp DESC"
+      "SELECT id, username, xp, level FROM users ORDER BY level DESC, xp DESC"
     );
     res.json(result.rows);
   } catch (err) {
