@@ -4,9 +4,10 @@ exports.register = async (req, res) => {
   const { email, password } = req.body;
   try {
     const result = await authService.register(email, password);
-    res.status(201).json(result);
+    res.status(200).json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Fehler bei der Registrierung:', err);
+    res.status(400).json({ error: err.message });   
   }
 };
 
@@ -16,7 +17,8 @@ exports.login = async (req, res) => {
     const result = await authService.login(email, password);
     res.status(200).json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Fehler beim Login:', err);           
+    res.status(400).json({ error: err.message });     
   }
 };
 
@@ -26,7 +28,8 @@ exports.forgotPassword = async (req, res) => {
     const result = await authService.forgotPassword(email);
     res.status(200).json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Fehler beim Zurücksetzen des Passworts:', err); 
+    res.status(400).json({ error: err.message });         
   }
 };
 

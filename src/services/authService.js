@@ -6,7 +6,7 @@ exports.register = async (email, password) => {
 
   try {
     const userExists = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    console.log('Ergebnisse der Überprüfung auf existierenden Benutzer:', userExists.rows); // Ausgabe der Benutzerüberprüfung
+    console.log('Benutzer Existiert?', userExists.rows.length > 0); // Prüfe ob Benutzer bereits existiert
 
     if (userExists.rows.length > 0) {
       console.error('Benutzer existiert bereits');
@@ -54,12 +54,10 @@ exports.login = async (email, password) => {
 };
 
 exports.forgotPassword = async (email) => {
-  // Dummy-Implementierung (später z.B. E-Mail senden)
   const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
   if (result.rows.length === 0) {
     throw new Error('E-Mail nicht gefunden');
   }
 
-  // TODO: E-Mail mit Passwort-Reset-Link senden
   return { message: 'Passwort-Reset-E-Mail wurde gesendet (Demo)' };
 };
