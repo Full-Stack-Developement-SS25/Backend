@@ -16,7 +16,9 @@ app.use(cors({
 
 // Routen importieren
 const authRoutes = require('./routes/authRoutes');
+const protectedRoutes = require('./routes/protectedRoutes');
 
+app.use('/api/user', protectedRoutes);
 app.use(cors());
 app.use('/api/auth', authRoutes);
 

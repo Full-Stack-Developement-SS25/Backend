@@ -1,38 +1,31 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-exports.register = async (email, password) => {
-  console.log('Empfange Registrierung-Anfrage mit E-Mail:', email); // Log, um zu sehen, ob die Anfrage kommt
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.email },  
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN }
+  );
+}
 
+exports.register = async (email, password, username) => {
   try {
     const userExists = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    console.log('Benutzer Existiert?', userExists.rows.length > 0); // Prüfe ob Benutzer bereits existiert
-
     if (userExists.rows.length > 0) {
-      console.error('Benutzer existiert bereits');
       throw new Error('Benutzer existiert bereits');
     }
 
-    let hashedPassword;
-    try {
-      hashedPassword = await bcrypt.hash(password, 10);
-      console.log('Passwort erfolgreich gehasht');
-    } catch (hashError) {
-      console.error('Fehler beim Hashen des Passworts:', hashError);
-      throw new Error('Fehler beim Hashen des Passworts');
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const insertResult = await db.query(
-      'INSERT INTO users (email, password_hash, level, xp, created_at) VALUES ($1, $2, 0, 0, NOW())',
-      [email, hashedPassword]
+      'INSERT INTO users (email, password_hash, username, level, xp, created_at) VALUES ($1, $2, $3, 0, 0, NOW())',
+      [email, hashedPassword, username]
     );
-    
-    console.log('Benutzer erfolgreich in die Datenbank eingefügt:', insertResult); // Log für erfolgreiche Datenbankoperation
 
     return { message: 'Registrierung erfolgreich' };
-
   } catch (err) {
-    console.error('Fehler bei der Registrierung:', err); // Ausgabe des Fehlers im Backend
     throw new Error(`Fehler bei der Registrierung: ${err.message}`);
   }
 };
@@ -50,7 +43,18 @@ exports.login = async (email, password) => {
     throw new Error('Falsches Passwort');
   }
 
-  return { message: 'Login erfolgreich' };
+ 
+  const token = jwt.sign(
+    { id: user.id, email: user.email }, // Payload
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+  );
+
+  return {
+    message: 'Login erfolgreich',
+    token, // ⬅️ wird an den Client zurückgegeben
+    user: { id: user.id, email: user.email },
+  };
 };
 
 exports.forgotPassword = async (email) => {
@@ -61,3 +65,4 @@ exports.forgotPassword = async (email) => {
 
   return { message: 'Passwort-Reset-E-Mail wurde gesendet (Demo)' };
 };
+
