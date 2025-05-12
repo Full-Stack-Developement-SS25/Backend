@@ -20,7 +20,7 @@ const authRoutes = require('./routes/authRoutes');
 
 app.use(cors());
 app.use('/api/auth', authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/user", userRoutes);
 
 
 app.get('/', (req, res) => {
