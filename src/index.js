@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
+const userRoutes = require("./routes/userRoutes");
 
 // .env laden
 dotenv.config();
@@ -21,6 +22,8 @@ const protectedRoutes = require('./routes/protectedRoutes');
 app.use('/api/user', protectedRoutes);
 app.use(cors());
 app.use('/api/auth', authRoutes);
+app.use("/api/user", userRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('API läuft!');

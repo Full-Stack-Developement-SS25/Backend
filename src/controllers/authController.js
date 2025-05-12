@@ -31,3 +31,15 @@ exports.forgotPassword = async (req, res) => {
     res.status(400).json({ error: err.message });         
   }
 };
+
+// GET /api/users → alle User mit XP & Level
+const getAllUsers = async (req, res) => {
+  try {
+    const result = await db.query("SELECT id, username, xp, level FROM users ORDER BY xp DESC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Fehler beim Abrufen aller Benutzer:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+};
+
