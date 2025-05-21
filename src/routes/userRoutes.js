@@ -35,4 +35,35 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.post("/:userId/task/:taskId/done", async (req, res) => {
+  const { userId, taskId } = req.params;
+
+  try {
+    // Optional: existiert schon ein Prompt?
+    const promptRes = await db.query(
+      "SELECT id FROM prompts WHERE user_id = $1 AND task_id = $2 LIMIT 1",
+      [userId, taskId]
+    );
+
+    if (promptRes.rows.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Kein Prompt gefunden für diese Aufgabe" });
+    }
+
+    // Prompt als "done" markieren
+    await db.query(
+      "UPDATE prompts SET done = true WHERE user_id = $1 AND task_id = $2",
+      [userId, taskId]
+    );
+
+    res.json({ message: "Aufgabe als erledigt markiert" });
+  } catch (err) {
+    console.error("❌ Fehler beim Markieren als erledigt:", err);
+    res.status(500).json({ error: "Interner Fehler beim Erledigen" });
+  }
+});
+
+
+
 module.exports = router;
