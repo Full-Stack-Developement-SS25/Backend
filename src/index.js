@@ -11,16 +11,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(cors({
-  origin: '*',  
-}));
+app.use(cors());
 
 // Routen importieren
 const authRoutes = require('./routes/authRoutes');
 const protectedRoutes = require('./routes/protectedRoutes');
 
 app.use('/api/user', protectedRoutes);
-app.use(cors());
 app.use('/api/auth', authRoutes);
 app.use("/api/user", userRoutes);
 

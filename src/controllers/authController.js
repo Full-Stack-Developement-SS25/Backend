@@ -84,3 +84,52 @@ exports.firebaseLogin = async (req, res) => {
     res.status(401).json({ message: 'Ungültiges Firebase Token' });
   }
 };
+
+exports.githubLogin = async (req, res) => {
+  const { code, platform } = req.body;  // platform kann "web" oder "app" sein
+
+  if (!code) {
+    return res.status(400).json({ message: 'Kein Code erhalten' });
+  }
+
+  try {
+    const result = await authService.githubLogin(code, platform);
+    res.status(200).json({
+      message: 'GitHub Login erfolgreich',
+      token: result.token,
+      user: { id: result.user.id, email: result.user.email },
+    });
+  } catch (err) {
+    console.error('GitHub Token Verifikation Fehler:', err);
+    res.status(401).json({ message: 'Ungültiges GitHub Token' });
+  }
+};
+
+
+exports.githubCallback = async (req, res) => {
+  const code = req.query.code;
+
+  if (!code) {
+    return res.status(400).json({ message: 'Kein Code erhalten' });
+  }
+
+  try {
+    const result = await authService.githubLogin(code, 'web'); 
+
+    // Hier sendest du das JWT Token und User-Daten als JSON an den Client zurück:
+    res.status(200).json({
+      message: 'GitHub Login erfolgreich',
+      token: result.token,        // JWT Token für Frontend zum Speichern (z.B. localStorage)
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        username: result.user.username || result.user.email,
+      },
+    });
+  } catch (err) {
+    console.error('GitHub Login Fehler:', err);
+    res.status(500).json({ message: 'Fehler bei der GitHub Authentifizierung' });
+  }
+};
+
+
