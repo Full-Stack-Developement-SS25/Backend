@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const protectedRoutes = require('./routes/protectedRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const badgeRoutes = require("./routes/badgeRoutes");
 
 dotenv.config();
 
@@ -19,11 +20,6 @@ app.use(express.json());
 app.use(cors({ origin: '*' }));
 app.use(bodyParser.json());
 
-// Routen importieren
-const authRoutes = require('./routes/authRoutes');
-const protectedRoutes = require('./routes/protectedRoutes');
-const userRoutes = require('./routes/userRoutes');
-const badgeRoutes = require('./routes/badgeRoutes');
 
 // Routen verwenden
 app.use('/api/auth', authRoutes);
