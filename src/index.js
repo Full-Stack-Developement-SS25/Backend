@@ -3,6 +3,12 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const protectedRoutes = require('./routes/protectedRoutes');
+const evaluationRoutes = require('./routes/evaluationRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+
 dotenv.config();
 
 const app = express();
@@ -24,6 +30,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', protectedRoutes);   // z. B. /api/user/me
 app.use('/api/user', userRoutes);        // z. B. /api/user/:id
 app.use('/api/badges', badgeRoutes);     // z. B. /api/badges/:userId
+app.use('/api/evaluation', evaluationRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Test-Route
 app.get('/', (req, res) => {
