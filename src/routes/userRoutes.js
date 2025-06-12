@@ -65,5 +65,26 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
 });
 
 
+// Alle Badges eines Users
+router.get("/:id/badges", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const result = await db.query(
+      `SELECT b.*, ub.awarded_at
+   FROM user_badges ub
+   JOIN badges b ON ub.badge_id = b.id
+   WHERE ub.user_id = $1`,
+  [userId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Badges:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+
 
 module.exports = router;
