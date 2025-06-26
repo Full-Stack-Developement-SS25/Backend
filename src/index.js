@@ -9,6 +9,7 @@ const protectedRoutes = require('./routes/protectedRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const badgeRoutes = require("./routes/badgeRoutes");
+const promptHistoryRoutes = require('./routes/promptHistoryRoutes');
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/user', protectedRoutes);   // z. B. /api/user/me
 app.use('/api/user', userRoutes);        // z. B. /api/user/:id
+app.use('/api/user', promptHistoryRoutes); // /api/user/:id/prompt-history
 app.use('/api/badges', badgeRoutes);     // z. B. /api/badges/:userId
 app.use('/api/evaluation', evaluationRoutes);
 app.use('/api/tasks', taskRoutes);
