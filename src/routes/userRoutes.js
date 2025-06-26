@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
+const badgeService = require("../services/badgeService");
 
 // Einzelner User (für Dashboard)
 router.get("/:id", async (req, res) => {
@@ -64,6 +65,26 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
   }
 });
 
+// Anzahl erledigter Aufgaben eines Users
+router.get("/:id/completed-count", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const result = await db.query(
+      "SELECT COUNT(*) FROM prompts WHERE user_id = $1 AND done = true",
+      [userId]
+    );
+
+    const count = parseInt(result.rows[0].count, 10);
+
+    res.json({ completedTasks: count });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der erledigten Aufgaben:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+
 // Alle Badges eines Users
 router.get("/:id/badges", async (req, res) => {
   const userId = req.params.id;
@@ -80,6 +101,64 @@ router.get("/:id/badges", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("Fehler beim Abrufen der Badges:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+// XP hinzufügen und Level ggf. erhöhen
+router.post("/:id/xp", async (req, res) => {
+  const userId = req.params.id;
+  const { xp } = req.body;
+
+  if (typeof xp !== "number" || xp <= 0) {
+    return res.status(400).json({ error: "XP muss eine positive Zahl sein" });
+  }
+
+  const BASE_XP = 100;
+  const XP_INCREMENT = 50;
+
+  try {
+    const result = await db.query("SELECT xp, level FROM users WHERE id = $1", [
+      userId,
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User nicht gefunden" });
+    }
+
+    let { xp: currentXP, level: currentLevel } = result.rows[0];
+    let totalXP = currentXP + xp;
+    let newLevel = currentLevel;
+    let leveledUp = false;
+
+    while (true) {
+      const requiredXP = BASE_XP + (newLevel - 1) * XP_INCREMENT;
+
+      if (totalXP >= requiredXP) {
+        totalXP -= requiredXP;
+        newLevel += 1;
+        leveledUp = true;
+      } else {
+        break;
+      }
+    }
+
+    await db.query("UPDATE users SET xp = $1, level = $2 WHERE id = $3", [
+      totalXP,
+      newLevel,
+      userId,
+    ]);
+
+    await badgeService.checkAndAwardBadges(userId);
+
+    res.json({
+      success: true,
+      newXP: totalXP,
+      newLevel,
+      leveledUp,
+    });
+  } catch (err) {
+    console.error("❌ Fehler beim XP-Update:", err);
     res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
