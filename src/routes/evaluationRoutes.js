@@ -3,21 +3,23 @@ const router = express.Router();
 const axios = require("axios");
 const db = require("../config/db");
 const badgeService = require("../services/badgeService");
+const models = require("../config/models");
 
 router.post("/", async (req, res) => {
-  const { task, prompt, userId, taskId } = req.body;
+  const { task, prompt, userId, taskId, model } = req.body;
 
   if (!prompt || !task || !userId || !taskId) {
     return res.status(400).json({
       error: "Benötigte Felder fehlen (task, prompt, userId, taskId)",
     });
   }
+  const modelId = models[model] || models["gpt4o mini"];
 
   try {
     const aiRes = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "openai/gpt-4o-mini-2024-07-18",
+        model: modelId,
         messages: [
           {
             role: "system",

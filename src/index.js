@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
-
+const modelRoutes = require("./routes/modelRoutes");
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const protectedRoutes = require('./routes/protectedRoutes');
@@ -28,6 +28,7 @@ app.use('/api/user', userRoutes);        // z. B. /api/user/:id
 app.use('/api/badges', badgeRoutes);     // z. B. /api/badges/:userId
 app.use('/api/evaluation', evaluationRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use("/api/models", modelRoutes);
 
 // Test-Route
 app.get('/', (req, res) => {
