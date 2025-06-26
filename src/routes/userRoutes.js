@@ -65,6 +65,26 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
   }
 });
 
+// Anzahl erledigter Aufgaben eines Users
+router.get("/:id/completed-count", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const result = await db.query(
+      "SELECT COUNT(*) FROM prompts WHERE user_id = $1 AND done = true",
+      [userId]
+    );
+
+    const count = parseInt(result.rows[0].count, 10);
+
+    res.json({ completedTasks: count });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der erledigten Aufgaben:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+
 // Alle Badges eines Users
 router.get("/:id/badges", async (req, res) => {
   const userId = req.params.id;
