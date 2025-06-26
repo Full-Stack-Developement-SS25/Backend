@@ -88,6 +88,10 @@ exports.firebaseLogin = async (req, res) => {
 exports.githubLogin = async (req, res) => {
   const { code, platform } = req.body;  // platform kann "web" oder "app" sein
 
+  console.log('📣 /github-login aufgerufen');
+  console.log('Code:', code);
+  console.log('Platform:', platform);
+
   if (!code) {
     return res.status(400).json({ message: 'Kein Code erhalten' });
   }
@@ -106,30 +110,37 @@ exports.githubLogin = async (req, res) => {
 };
 
 
+// Callback-Endpoint für FlutterWebAuth
 exports.githubCallback = async (req, res) => {
   const code = req.query.code;
 
+  console.log('📣 /github/callback aufgerufen');
+  console.log('Code aus Query:', code);
+
   if (!code) {
-    return res.status(400).json({ message: 'Kein Code erhalten' });
+    console.log('⚠️  Kein Code im Callback erhalten');
+    return res.status(400).send('Kein Code erhalten');
   }
 
-  try {
-    const result = await authService.githubLogin(code, 'web'); 
-
-    // Hier sendest du das JWT Token und User-Daten als JSON an den Client zurück:
-    res.status(200).json({
-      message: 'GitHub Login erfolgreich',
-      token: result.token,        // JWT Token für Frontend zum Speichern (z.B. localStorage)
-      user: {
-        id: result.user.id,
-        email: result.user.email,
-        username: result.user.username || result.user.email,
-      },
-    });
-  } catch (err) {
-    console.error('GitHub Login Fehler:', err);
-    res.status(500).json({ message: 'Fehler bei der GitHub Authentifizierung' });
-  }
+  // FlutterWebAuth erwartet, dass diese Seite den finalen URL zurück an das
+  // öffnende Fenster sendet. Dadurch kann die Bibliothek den `code` auslesen.
+  res.send(
+    `<!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="utf-8" />
+        <title>GitHub Callback</title>
+      </head>
+      <body>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage(window.location.href, '*');
+            window.close();
+          }
+        </script>
+        <p>GitHub Anmeldung abgeschlossen. Du kannst dieses Fenster schließen.</p>
+      </body>
+    </html>`
+  );
 };
-
 
