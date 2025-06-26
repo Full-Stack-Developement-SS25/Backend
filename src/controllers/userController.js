@@ -1,22 +1,37 @@
-const db = require('../config/db');
+const db = require("../config/db");
 
 exports.getProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
+  const userId = req.user.id;
 
+  try {
     const result = await db.query(
-      'SELECT id, email, level, xp, created_at, username FROM users WHERE id = $1',
+      `
+      SELECT id, email, username, level, xp, created_at
+      FROM users
+      WHERE id = $1
+      `,
       [userId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+      console.warn(`⚠️ Benutzer mit ID ${userId} nicht gefunden.`);
+      return res.status(404).json({ error: "Benutzer nicht gefunden" });
     }
 
     const user = result.rows[0];
-    res.status(200).json({ user });
+
+    res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        level: user.level,
+        xp: user.xp,
+        createdAt: user.created_at,
+      },
+    });
   } catch (error) {
-    console.error('Fehler beim Abrufen des Benutzerprofils:', error);
-    res.status(500).json({ error: 'Interner Serverfehler' });
+    console.error("❌ Fehler beim Abrufen des Benutzerprofils:", error);
+    res.status(500).json({ error: "Interner Serverfehler" });
   }
 };
