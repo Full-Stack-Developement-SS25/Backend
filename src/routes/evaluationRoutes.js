@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
     const aiRes = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "openai/gpt-3.5-turbo",
+        model: "openai/gpt-4o-mini-2024-07-18",
         messages: [
           {
             role: "system",

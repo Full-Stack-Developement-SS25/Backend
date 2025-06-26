@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 const badgeService = require("../services/badgeService");
-const badgeService = require("../services/badgeService");
 
 // Einzelner User (für Dashboard)
 router.get("/:id", async (req, res) => {
