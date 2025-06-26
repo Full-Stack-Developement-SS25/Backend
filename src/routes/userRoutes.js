@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
+const badgeService = require("../services/badgeService");
 
 // Einzelner User (für Dashboard)
 router.get("/:id", async (req, res) => {
@@ -18,6 +19,19 @@ router.get("/:id", async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Fehler beim Abrufen des Benutzers:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+// Alle Badges eines Users mit Status
+router.get("/:id/badges", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const badges = await badgeService.getBadgesForUser(userId);
+    res.json({ badges });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Badges:", err);
     res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
@@ -56,6 +70,8 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
       "UPDATE prompts SET done = true WHERE user_id = $1 AND task_id = $2",
       [userId, taskId]
     );
+
+    await badgeService.checkAndAwardBadges(userId);
 
     res.json({ message: "Aufgabe als erledigt markiert" });
   } catch (err) {
@@ -102,6 +118,8 @@ router.post("/:id/xp", async (req, res) => {
       newLevel,
       userId,
     ]);
+
+    await badgeService.checkAndAwardBadges(userId);
 
     res.json({
       success: true,
