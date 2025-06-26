@@ -1,19 +1,17 @@
 const express = require("express");
 const router = express.Router();
+const badgeService = require("../services/badgeService");
 
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res) => {
   const userId = req.params.id;
 
-  const dummyBadges = {
-    "456ef990-f39c-4e03-b6c4-85ca171ed559": [
-      "Erste Aufgabe erledigt",
-      "Level 1 erreicht",
-      "5 Prompts geschafft"
-    ],
-  };
-
-  const badges = dummyBadges[userId] || [];
-  res.json({ badges });
+  try {
+    const badges = await badgeService.getBadgesForUser(userId);
+    res.json({ badges });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Badges:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
 });
 
 module.exports = router;
