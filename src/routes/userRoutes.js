@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-const badgeService = require("../services/badgeService");
 
 // Einzelner User (für Dashboard)
 router.get("/:id", async (req, res) => {
@@ -19,19 +18,6 @@ router.get("/:id", async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Fehler beim Abrufen des Benutzers:", err);
-    res.status(500).json({ error: "Interner Serverfehler" });
-  }
-});
-
-// Alle Badges eines Users mit Status
-router.get("/:id/badges", async (req, res) => {
-  const userId = req.params.id;
-
-  try {
-    const badges = await badgeService.getBadgesForUser(userId);
-    res.json({ badges });
-  } catch (err) {
-    console.error("Fehler beim Abrufen der Badges:", err);
     res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
@@ -71,10 +57,6 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
       [userId, taskId]
     );
 
-    await badgeService.checkAndAwardBadges(userId);
-
-    await badgeService.checkAndAwardBadges(userId);
-
     res.json({ message: "Aufgabe als erledigt markiert" });
   } catch (err) {
     console.error("❌ Fehler beim Markieren als erledigt:", err);
@@ -82,105 +64,22 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
   }
 });
 
-// XP/Level aktualisieren
-router.patch("/:id/stats", async (req, res) => {
-  const userId = req.params.id;
-  const { xp, level } = req.body;
-
-  try {
-    if (xp === undefined && level === undefined) {
-      return res.status(400).json({ error: "xp oder level erforderlich" });
-    }
-
-    const fields = [];
-    const values = [userId];
-    let idx = 2;
-    if (xp !== undefined) {
-      fields.push(`xp = $${idx}`);
-      values.push(xp);
-      idx++;
-    }
-    if (level !== undefined) {
-      fields.push(`level = $${idx}`);
-      values.push(level);
-      idx++;
-    }
-
-    await db.query(`UPDATE users SET ${fields.join(', ')} WHERE id = $1`, values);
-
-    await badgeService.checkAndAwardBadges(userId);
-
-    res.json({ message: "Stats aktualisiert" });
-  } catch (err) {
-    console.error("Fehler beim Aktualisieren der Stats:", err);
-    res.status(500).json({ error: "Interner Serverfehler" });
-  }
-});
-
-
 // Alle Badges eines Users
 router.get("/:id/badges", async (req, res) => {
   const userId = req.params.id;
 
   try {
-    const badges = await badgeService.getBadgesWithStatus(userId);
+    const result = await db.query(
+      `SELECT b.*, ub.awarded_at
+   FROM user_badges ub
+   JOIN badges b ON ub.badge_id = b.id
+   WHERE ub.user_id = $1`,
+      [userId]
+    );
 
-    res.json(badges);
+    res.json(result.rows);
   } catch (err) {
     console.error("Fehler beim Abrufen der Badges:", err);
-    res.status(500).json({ error: "Interner Serverfehler" });
-  }
-});
-
-router.post("/:id/xp", async (req, res) => {
-  const userId = req.params.id;
-  const { xp } = req.body;
-
-  if (!xp || typeof xp !== "number") {
-    return res.status(400).json({ error: "XP muss als Zahl übergeben werden" });
-  }
-
-  const XP_PER_LEVEL = 100;
-
-  try {
-    // Aktuelle XP und Level des Users abrufen
-    const result = await db.query("SELECT xp, level FROM users WHERE id = $1", [
-      userId,
-    ]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "User nicht gefunden" });
-    }
-
-    let { xp: currentXP, level: currentLevel } = result.rows[0];
-    let newXP = currentXP + xp;
-    let newLevel = currentLevel;
-    let leveledUp = false;
-
-    // Level-Up-Logik
-    while (newXP >= XP_PER_LEVEL) {
-      newXP -= XP_PER_LEVEL;
-      newLevel += 1;
-      leveledUp = true;
-    }
-
-    // Datenbank aktualisieren
-    await db.query("UPDATE users SET xp = $1, level = $2 WHERE id = $3", [
-      newXP,
-      newLevel,
-      userId,
-    ]);
-
-    await badgeService.checkAndAwardBadges(userId);
-
-    res.json({
-      success: true,
-      newXP,
-      newLevel,
-      leveledUp,
-    });
-  } catch (err) {
-    console.error("❌ Fehler beim XP-Update:", err);
     res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
