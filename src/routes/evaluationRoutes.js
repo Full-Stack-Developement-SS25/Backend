@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const db = require("../config/db");
+const badgeService = require("../services/badgeService");
 
 router.post("/", async (req, res) => {
   const { task, prompt, userId, taskId } = req.body;
@@ -93,7 +94,8 @@ Halte dich **streng** an das JSON-Format. Verwende keine zusätzlichen Kommentar
         evaluation.stars || null,
       ]
     );
-    
+
+    await badgeService.checkAndAwardBadges(userId);
 
     res.json(evaluation);
   } catch (err) {

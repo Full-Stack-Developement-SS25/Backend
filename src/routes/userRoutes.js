@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
+const badgeService = require("../services/badgeService");
 
 // Einzelner User (für Dashboard)
 router.get("/:id", async (req, res) => {
@@ -57,10 +58,47 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
       [userId, taskId]
     );
 
+    await badgeService.checkAndAwardBadges(userId);
+
     res.json({ message: "Aufgabe als erledigt markiert" });
   } catch (err) {
     console.error("❌ Fehler beim Markieren als erledigt:", err);
     res.status(500).json({ error: "Interner Fehler beim Erledigen" });
+  }
+});
+
+// XP/Level aktualisieren
+router.patch("/:id/stats", async (req, res) => {
+  const userId = req.params.id;
+  const { xp, level } = req.body;
+
+  try {
+    if (xp === undefined && level === undefined) {
+      return res.status(400).json({ error: "xp oder level erforderlich" });
+    }
+
+    const fields = [];
+    const values = [userId];
+    let idx = 2;
+    if (xp !== undefined) {
+      fields.push(`xp = $${idx}`);
+      values.push(xp);
+      idx++;
+    }
+    if (level !== undefined) {
+      fields.push(`level = $${idx}`);
+      values.push(level);
+      idx++;
+    }
+
+    await db.query(`UPDATE users SET ${fields.join(', ')} WHERE id = $1`, values);
+
+    await badgeService.checkAndAwardBadges(userId);
+
+    res.json({ message: "Stats aktualisiert" });
+  } catch (err) {
+    console.error("Fehler beim Aktualisieren der Stats:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
 
@@ -70,15 +108,9 @@ router.get("/:id/badges", async (req, res) => {
   const userId = req.params.id;
 
   try {
-    const result = await db.query(
-      `SELECT b.*, ub.awarded_at
-   FROM user_badges ub
-   JOIN badges b ON ub.badge_id = b.id
-   WHERE ub.user_id = $1`,
-  [userId]
-    );
+    const badges = await badgeService.getBadgesWithStatus(userId);
 
-    res.json(result.rows);
+    res.json(badges);
   } catch (err) {
     console.error("Fehler beim Abrufen der Badges:", err);
     res.status(500).json({ error: "Interner Serverfehler" });
