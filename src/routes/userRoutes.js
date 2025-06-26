@@ -90,8 +90,8 @@ router.post("/:id/xp", async (req, res) => {
   const userId = req.params.id;
   const { xp } = req.body;
 
-  if (typeof xp !== "number") {
-    return res.status(400).json({ error: "XP muss als Zahl übergeben werden" });
+  if (typeof xp !== "number" || xp <= 0) {
+    return res.status(400).json({ error: "XP muss eine positive Zahl sein" });
   }
 
   const XP_PER_LEVEL = 100;
@@ -111,6 +111,7 @@ router.post("/:id/xp", async (req, res) => {
     let leveledUp = false;
 
     while (newXP >= XP_PER_LEVEL) {
+      newXP -= XP_PER_LEVEL;
       newLevel += 1;
       leveledUp = true;
     }
@@ -129,5 +130,6 @@ router.post("/:id/xp", async (req, res) => {
     res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
+
 
 module.exports = router;
