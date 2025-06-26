@@ -94,7 +94,8 @@ router.post("/:id/xp", async (req, res) => {
     return res.status(400).json({ error: "XP muss eine positive Zahl sein" });
   }
 
-  const XP_PER_LEVEL = 100;
+  const BASE_XP = 100;
+  const XP_INCREMENT = 50;
 
   try {
     const result = await db.query("SELECT xp, level FROM users WHERE id = $1", [
@@ -106,30 +107,40 @@ router.post("/:id/xp", async (req, res) => {
     }
 
     let { xp: currentXP, level: currentLevel } = result.rows[0];
-    let newXP = currentXP + xp;
+    let totalXP = currentXP + xp;
     let newLevel = currentLevel;
     let leveledUp = false;
 
-    while (newXP >= XP_PER_LEVEL) {
-      newXP -= XP_PER_LEVEL;
-      newLevel += 1;
-      leveledUp = true;
+    while (true) {
+      const requiredXP = BASE_XP + (newLevel - 1) * XP_INCREMENT;
+
+      if (totalXP >= requiredXP) {
+        totalXP -= requiredXP;
+        newLevel += 1;
+        leveledUp = true;
+      } else {
+        break;
+      }
     }
 
     await db.query("UPDATE users SET xp = $1, level = $2 WHERE id = $3", [
-      newXP,
+      totalXP,
       newLevel,
       userId,
     ]);
 
     await badgeService.checkAndAwardBadges(userId);
 
-    res.json({ success: true, newXP, newLevel, leveledUp });
+    res.json({
+      success: true,
+      newXP: totalXP,
+      newLevel,
+      leveledUp,
+    });
   } catch (err) {
     console.error("❌ Fehler beim XP-Update:", err);
     res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
-
 
 module.exports = router;
