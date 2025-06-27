@@ -156,3 +156,25 @@ exports.githubCallback = async (req, res) => {
   );
 };
 
+exports.verifyEmail = async (req, res) => {
+  const { email, token } = req.query;
+  try {
+    const result = await authService.verifyEmail(email, token);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Fehler bei der E-Mail-Bestätigung:', err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+exports.resendVerification = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const result = await authService.resendVerification(email);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Fehler beim erneuten Senden der Bestätigung:', err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
