@@ -5,6 +5,37 @@ const badgeService = require("../services/badgeService");
 const axios = require("axios");
 const models = require("../config/models");
 
+const types = [
+  "Analyse",
+  "Beschreibung",
+  "Kreativ",
+  "Umformulierung",
+  "Dialog",
+  "Struktur",
+];
+
+
+const themes = [
+  "Alltag",
+  "Wissenschaft",
+  "Technik",
+  "Kreatives Schreiben",
+  "Rollenspiele",
+  "Marketing",
+  "Kundenservice",
+  "Bildung",
+  "Beratung",
+  "Storytelling",
+  "Unterhaltung",
+  "Medizin",
+  "Umwelt",
+  "Journalismus",
+  "Gaming",
+];
+
+const randomFromArray = (array) =>
+  array[Math.floor(Math.random() * array.length)];
+
 // Einzelner User (für Dashboard)
 router.get("/:id", async (req, res) => {
   const userId = req.params.id;
@@ -128,11 +159,11 @@ router.post("/:id/premium/buy", async (req, res) => {
   }
 });
 
-// Neue Aufgabe per KI generieren (nur für Premium-User)
 router.post("/:id/task/generate", async (req, res) => {
   const userId = req.params.id;
 
   try {
+    // 🔍 Premium-Check
     const premRes = await db.query(
       "SELECT is_premium FROM users WHERE id = $1",
       [userId]
@@ -143,18 +174,85 @@ router.post("/:id/task/generate", async (req, res) => {
     }
 
     if (!premRes.rows[0].is_premium) {
-      return res.status(403).json({ error: "Nur für Premium-Benutzer" });
+      return res.status(403).json({ error: "Nur für Premium-Nutzer" });
     }
 
-    const promptText =
-      "Erstelle eine Aufgabe für das Thema Prompt Engineering. Gib ein JSON mit Titel, Beschreibung, Schwierigkeit (Leicht, Mittel, Schwer) und Typ (Analyse, Beschreibung, Kreativ, Umformulierung, Dialog, Struktur) zurück.";
+    // 🔥 Zufälliges Thema und Typ
+    const randomTheme = randomFromArray(themes);
+    const randomType = randomFromArray(types);
 
+    // 🔥 Prompt an die KI
+    const systemPrompt = `
+Du bist ein professioneller Aufgaben-Generator für eine Lern-App zum Thema Prompt Engineering.
+
+Dein Ziel ist es, abwechslungsreiche, kreative und sinnvolle Aufgaben zu erstellen, mit denen Nutzer:innen lernen, bessere Prompts für KI zu schreiben.
+
+Wähle für diese Aufgabe das Thema: "${randomTheme}" und den Typ: "${randomType}".
+
+Jede Aufgabe trainiert eine spezifische Fähigkeit. Themen und Typen der Aufgaben sollen möglichst variieren.
+
+🚦 Schwierigkeit bewerten:
+
+Die Schwierigkeit basiert auf der kognitiven Komplexität der Aufgabe und der Anzahl der zu beachtenden Parameter.
+
+🔸 Leicht:
+- Aufgabe ist kurz, direkt und ohne komplexe Struktur.
+- Eine einzelne Handlung oder Idee.
+- Beispiele: Eine kreative Beschreibung, eine einfache Anfrage, ein einzelner Satz oder ein Objekt beschreiben.
+
+🔸 Mittel:
+- Aufgabe benötigt mehrere Schritte, Bedingungen oder Strukturen.
+- Nutzer:innen müssen überlegen, wie man etwas organisiert, strukturiert oder verschiedene Aspekte kombiniert.
+- Beispiele: Schritt-für-Schritt-Anleitung, Vergleich, strukturierte Analyse, mehrere Anforderungen in einem Prompt.
+
+🔸 Schwer:
+- Komplexe Aufgaben mit hoher mentaler Belastung.
+- Rollenspiele, Dialoge, Debatten, komplexe Simulationen oder Optimierung bestehender Prompts.
+- Aufgaben, bei denen mehrere Perspektiven, Rollen oder Zielgruppen gleichzeitig beachtet werden müssen.
+
+Wähle die Schwierigkeit **nicht zufällig**, sondern basierend auf:
+- Anzahl der Anforderungen
+- Abstraktionsgrad der Aufgabe
+- Mentale Komplexität für die Formulierung eines effektiven Prompts
+
+⚠️ Wenn es eine einfache, kurze Aufgabe ist → Leicht.  
+Wenn es strukturiert oder bedingt ist → Mittel.  
+Wenn es komplexe Rollenspiele, Dialoge oder kritische Optimierungen sind → Schwer.
+
+Vermeide Wiederholungen, sei kreativ, nutze ungewöhnliche Themen oder lustige Situationen.
+
+Gib keine Aufgaben zu historischen Debatten, wenn sie bereits verwendet wurden.
+
+Typen, die du benutzen kannst: Analyse, Beschreibung, Kreativ, Umformulierung, Dialog, Struktur.
+`.trim();
+
+    const userPrompt = `
+Gib ausschließlich ein JSON-Objekt zurück. Keine Einleitung, keine Erklärung.
+
+Format:
+
+{
+  "title": "Titel der Aufgabe",
+  "description": "Beschreibung der Aufgabe",
+  "difficulty": "Leicht, Mittel oder Schwer",
+  "type": "Analyse, Beschreibung, Kreativ, Umformulierung, Dialog oder Struktur"
+}
+
+❗ Die Aufgabe ist direkt die Handlungsanweisung.
+
+❌ Kein Text vor oder nach dem JSON.
+`.trim();
+
+    // 🔗 API-Call an OpenRouter
     const aiRes = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: models["gpt4o mini"],
-        messages: [{ role: "user", content: promptText }],
-        temperature: 0.7,
+        model: models["gpt-4o"] ?? "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.9,
       },
       {
         headers: {
@@ -167,19 +265,38 @@ router.post("/:id/task/generate", async (req, res) => {
     );
 
     const raw = aiRes.data.choices[0].message.content;
-    let task;
-    try {
-      task = JSON.parse(raw);
-    } catch (err) {
-      console.error("❌ Generierte Aufgabe kein gültiges JSON:", raw);
+    console.log("🔵 KI-Antwort:", raw);
+
+    // 🛡️ JSON-Parsing absichern
+    const jsonMatch = raw.match(/{[\s\S]*}/);
+    if (!jsonMatch) {
+      console.error("❌ Kein JSON gefunden in:", raw);
       return res
         .status(500)
         .json({ error: "Antwort der KI ist kein gültiges JSON" });
     }
 
+    let task;
+    try {
+      task = JSON.parse(jsonMatch[0]);
+    } catch (err) {
+      console.error("❌ Fehler beim JSON-Parsing:", jsonMatch[0]);
+      return res.status(500).json({ error: "JSON-Parsing fehlgeschlagen" });
+    }
+
+    // 🔍 Validierung
+    if (!task.title || !task.description || !task.difficulty || !task.type) {
+      return res
+        .status(400)
+        .json({ error: "Ungültiges JSON-Format von der KI" });
+    }
+
+    // ✅ In DB speichern
     const insertRes = await db.query(
-      `INSERT INTO tasks (title, description, difficulty, type, user_id, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
+      `
+      INSERT INTO tasks (title, description, difficulty, type, user_id, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      RETURNING *`,
       [task.title, task.description, task.difficulty, task.type, userId]
     );
 
@@ -192,6 +309,10 @@ router.post("/:id/task/generate", async (req, res) => {
     res.status(500).json({ error: "Aufgabengenerierung fehlgeschlagen" });
   }
 });
+
+module.exports = router;
+
+
 
 
 // Alle Badges eines Users
