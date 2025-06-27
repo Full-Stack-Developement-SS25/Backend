@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.SMTP_PORT, 10) || 587,
   secure: process.env.SMTP_SECURE === 'true',
   auth: {
-    user: process.env.PROMPTMASTER_EMAIL,
-    pass: process.env.PROMPTMASTER_PASSWORD,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
