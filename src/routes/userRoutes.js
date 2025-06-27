@@ -105,6 +105,27 @@ router.get("/:id/premium", async (req, res) => {
   }
 });
 
+// Premium kaufen (nur zu Testzwecken)
+router.post("/:id/premium/buy", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const result = await db.query(
+      "UPDATE users SET is_premium = true WHERE id = $1 RETURNING is_premium",
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ isPremium: result.rows[0].is_premium });
+  } catch (err) {
+    console.error("Fehler beim Kauf von Premium:", err);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
 
 // Alle Badges eines Users
 router.get("/:id/badges", async (req, res) => {
