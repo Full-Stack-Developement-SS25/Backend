@@ -24,7 +24,7 @@ exports.register = async (email, password, username) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const insertResult = await db.query(
-      'INSERT INTO users (email, password_hash, username, level, xp, created_at) VALUES ($1, $2, $3, 0, 0, NOW())',
+      'INSERT INTO users (email, password_hash, username, level, xp, created_at) VALUES ($1, $2, $3, 1, 0, NOW())',
       [email, hashedPassword, username]
     );
 
@@ -61,13 +61,70 @@ exports.login = async (email, password) => {
   };
 };
 
+const mailer = require('../config/mail');
+
 exports.forgotPassword = async (email) => {
-  const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+  const result = await db.query('SELECT id FROM users WHERE email = $1', [email]);
   if (result.rows.length === 0) {
     throw new Error('E-Mail nicht gefunden');
   }
 
-  return { message: 'Passwort-Reset-E-Mail wurde gesendet (Demo)' };
+  const userId = result.rows[0].id;
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = await bcrypt.hash(token, 10);
+
+  await db.query(
+    `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL
+    )`
+  );
+
+  await db.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [userId]);
+  await db.query(
+  "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
+  [userId, tokenHash]
+);
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+  await mailer.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: 'Passwort zurücksetzen',
+    text: `Klicke auf folgenden Link um dein Passwort zurückzusetzen: ${resetUrl}`,
+  });
+
+  return { message: 'Passwort-Reset-E-Mail wurde gesendet' };
+};
+
+exports.resetPassword = async (email, token, newPassword) => {
+  const userRes = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (userRes.rows.length === 0) {
+    throw new Error('Benutzer nicht gefunden');
+  }
+  const userId = userRes.rows[0].id;
+
+  const tokenRes = await db.query(
+    'SELECT token_hash, expires_at FROM password_reset_tokens WHERE user_id = $1',
+    [userId]
+  );
+  if (tokenRes.rows.length === 0) {
+    throw new Error('Ungültiges oder abgelaufenes Token');
+  }
+
+  const stored = tokenRes.rows[0];
+  const isValid = await bcrypt.compare(token, stored.token_hash);
+  if (!isValid || new Date(stored.expires_at) < new Date()) {
+    throw new Error('Ungültiges oder abgelaufenes Token');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+  await db.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [userId]);
+
+  return { message: 'Passwort erfolgreich zurückgesetzt' };
 };
 
 exports.firebaseLogin = async (idToken) => {
@@ -82,7 +139,7 @@ exports.firebaseLogin = async (idToken) => {
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
     const insertResult = await db.query(
-      'INSERT INTO users (email, username, password_hash, level, xp, created_at) VALUES ($1, $2, $3, 0, 0, NOW()) RETURNING *',
+      'INSERT INTO users (email, username, password_hash, level, xp, created_at) VALUES ($1, $2, $3, 1, 0, NOW()) RETURNING *',
       [email, decodedToken.name || email, hashedPassword]
     );
 
@@ -164,7 +221,7 @@ exports.githubLogin = async (code, platform = 'web') => {
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
       const insertResult = await db.query(
-        'INSERT INTO users (email, username, password_hash, level, xp, created_at) VALUES ($1, $2, $3, 0, 0, NOW()) RETURNING *',
+        'INSERT INTO users (email, username, password_hash, level, xp, created_at) VALUES ($1, $2, $3, 1, 0, NOW()) RETURNING *',
         [githubUser.email, githubUser.login || githubUser.name || githubUser.email, hashedPassword]
       );
       user = insertResult.rows[0];

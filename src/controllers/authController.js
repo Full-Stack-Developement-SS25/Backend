@@ -43,7 +43,6 @@ exports.login = async (req, res) => {
   }
 };
 
-// Passwort zurücksetzen
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
@@ -54,6 +53,19 @@ exports.forgotPassword = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// Passwort zurücksetzen
+exports.resetPassword = async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  try {
+    const result = await authService.resetPassword(email, token, newPassword);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Fehler beim Zurücksetzen des Passworts:', err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
 
 // Alle Benutzer mit XP und Level abrufen (GET /api/users)
 exports.getAllUsers = async (req, res) => {
