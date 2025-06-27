@@ -43,7 +43,6 @@ exports.login = async (req, res) => {
   }
 };
 
-// Passwort zurücksetzen
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
@@ -54,6 +53,19 @@ exports.forgotPassword = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// Passwort zurücksetzen
+exports.resetPassword = async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  try {
+    const result = await authService.resetPassword(email, token, newPassword);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Fehler beim Zurücksetzen des Passworts:', err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
 
 // Alle Benutzer mit XP und Level abrufen (GET /api/users)
 exports.getAllUsers = async (req, res) => {
@@ -142,5 +154,27 @@ exports.githubCallback = async (req, res) => {
       </body>
     </html>`
   );
+};
+
+exports.verifyEmail = async (req, res) => {
+  const { email, token } = req.query;
+  try {
+    const result = await authService.verifyEmail(email, token);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Fehler bei der E-Mail-Bestätigung:', err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+exports.resendVerification = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const result = await authService.resendVerification(email);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Fehler beim erneuten Senden der Bestätigung:', err);
+    res.status(400).json({ error: err.message });
+  }
 };
 
