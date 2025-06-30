@@ -74,6 +74,7 @@ Halte dich **streng** an das JSON-Format. Verwende keine zusätzlichen Kommentar
     try {
       evaluation = JSON.parse(raw);
     } catch (err) {
+      console.error(err);
       console.error("❌ Bewertung ist kein gültiges JSON:", raw);
       return res
         .status(500)

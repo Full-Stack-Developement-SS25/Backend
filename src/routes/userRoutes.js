@@ -280,6 +280,7 @@ Format:
     try {
       task = JSON.parse(jsonMatch[0]);
     } catch (err) {
+      console.error(err);
       console.error("❌ Fehler beim JSON-Parsing:", jsonMatch[0]);
       return res.status(500).json({ error: "JSON-Parsing fehlgeschlagen" });
     }

@@ -24,10 +24,10 @@ app.use(bodyParser.json());
 
 // Routen verwenden
 app.use('/api/auth', authRoutes);
-app.use('/api/user', protectedRoutes);   // z. B. /api/user/me
-app.use('/api/user', userRoutes);        // z. B. /api/user/:id
-app.use('/api/user', promptHistoryRoutes); // /api/user/:id/prompt-history
-app.use('/api/badges', badgeRoutes);     // z. B. /api/badges/:userId
+app.use('/api/user', protectedRoutes);
+app.use('/api/user', userRoutes); 
+app.use('/api/user', promptHistoryRoutes);
+app.use('/api/badges', badgeRoutes);
 app.use('/api/evaluation', evaluationRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use("/api/models", modelRoutes);

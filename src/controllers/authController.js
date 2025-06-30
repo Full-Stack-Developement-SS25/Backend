@@ -1,7 +1,6 @@
 const authService = require('../services/authService');
 const db = require('../config/db'); // Deine DB-Verbindung
 const admin = require('firebase-admin');
-const jwt = require('jsonwebtoken');
 const serviceAccount = require('../config/serviceAccountKey.json');
 
 
@@ -9,15 +8,6 @@ if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-}
-
-// Eigene JWT Token Generierung (kann auch ins authService ausgelagert werden)
-function generateToken(user) {
-  return jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
-  );
 }
 
 // Registrierung

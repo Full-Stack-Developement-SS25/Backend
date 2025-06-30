@@ -16,6 +16,7 @@ module.exports = (req, res, next) => {
     req.user = decoded; // z.B. { id: ..., email: ... }
     next();
   } catch (err) {
+    console.error(err);
     return res.status(403).json({ error: 'Ungültiger oder abgelaufener Token' });
   }
 };
