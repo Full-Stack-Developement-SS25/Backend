@@ -1,5 +1,7 @@
 const db = require("../config/db");
 
+// Benutzerprofil abrufen
+// GET /api/profile
 exports.getProfile = async (req, res) => {
   const userId = req.user.id;
 

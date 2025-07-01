@@ -73,7 +73,6 @@ router.post("/:userId/task/:taskId/done", async (req, res) => {
   const { userId, taskId } = req.params;
 
   try {
-    // Optional: existiert schon ein Prompt?
     const promptRes = await db.query(
       "SELECT id FROM prompts WHERE user_id = $1 AND task_id = $2 LIMIT 1",
       [userId, taskId]
@@ -163,7 +162,6 @@ router.post("/:id/task/generate", async (req, res) => {
   const userId = req.params.id;
 
   try {
-    // 🔍 Premium-Check
     const premRes = await db.query(
       "SELECT is_premium FROM users WHERE id = $1",
       [userId]
@@ -177,11 +175,9 @@ router.post("/:id/task/generate", async (req, res) => {
       return res.status(403).json({ error: "Nur für Premium-Nutzer" });
     }
 
-    // 🔥 Zufälliges Thema und Typ
     const randomTheme = randomFromArray(themes);
     const randomType = randomFromArray(types);
 
-    // 🔥 Prompt an die KI
     const systemPrompt = `
 Du bist ein professioneller Aufgaben-Generator für eine Lern-App zum Thema Prompt Engineering.
 
@@ -243,7 +239,6 @@ Format:
 ❌ Kein Text vor oder nach dem JSON.
 `.trim();
 
-    // 🔗 API-Call an OpenRouter
     const aiRes = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -267,7 +262,6 @@ Format:
     const raw = aiRes.data.choices[0].message.content;
     console.log("🔵 KI-Antwort:", raw);
 
-    // 🛡️ JSON-Parsing absichern
     const jsonMatch = raw.match(/{[\s\S]*}/);
     if (!jsonMatch) {
       console.error("❌ Kein JSON gefunden in:", raw);
@@ -285,14 +279,12 @@ Format:
       return res.status(500).json({ error: "JSON-Parsing fehlgeschlagen" });
     }
 
-    // 🔍 Validierung
     if (!task.title || !task.description || !task.difficulty || !task.type) {
       return res
         .status(400)
         .json({ error: "Ungültiges JSON-Format von der KI" });
     }
 
-    // ✅ In DB speichern
     const insertRes = await db.query(
       `
       INSERT INTO tasks (title, description, difficulty, type, user_id, created_at)
@@ -313,10 +305,6 @@ Format:
 
 module.exports = router;
 
-
-
-
-// Alle Badges eines Users
 router.get("/:id/badges", async (req, res) => {
   const userId = req.params.id;
 
@@ -336,7 +324,6 @@ router.get("/:id/badges", async (req, res) => {
   }
 });
 
-// XP hinzufügen und Level ggf. erhöhen
 router.post("/:id/xp", async (req, res) => {
   const userId = req.params.id;
   const { xp } = req.body;

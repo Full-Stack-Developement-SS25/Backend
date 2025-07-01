@@ -1,5 +1,5 @@
 const authService = require('../services/authService');
-const db = require('../config/db'); // Deine DB-Verbindung
+const db = require('../config/db'); 
 const admin = require('firebase-admin');
 const serviceAccount = require('../config/serviceAccountKey.json');
 
@@ -33,6 +33,7 @@ exports.login = async (req, res) => {
   }
 };
 
+// Passwort vergessen
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
@@ -68,6 +69,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Firebase Login 
 exports.firebaseLogin = async (req, res) => {
   const { token } = req.body;
   if (!token) {
@@ -87,6 +89,7 @@ exports.firebaseLogin = async (req, res) => {
   }
 };
 
+// GitHub Login
 exports.githubLogin = async (req, res) => {
   const { code, platform } = req.body;  // platform kann "web" oder "app" sein
 
@@ -146,6 +149,7 @@ exports.githubCallback = async (req, res) => {
   );
 };
 
+// E-Mail-Bestätigung
 exports.verifyEmail = async (req, res) => {
   const { email, token } = req.query;
   try {
@@ -157,6 +161,7 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
+// Erneutes Senden der E-Mail-Bestätigung
 exports.resendVerification = async (req, res) => {
   const { email } = req.body;
   try {
